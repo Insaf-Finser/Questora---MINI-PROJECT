@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "115960016787",
+    "project_id": "questora-8da3a",
+    "storage_bucket": "questora-8da3a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:115960016787:android:535e50f44a1c9ce5270266",
+        "android_client_info": {
+          "package_name": "com.example.quest"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "115960016787-fkjj6gc2nhne86qhaq30psn43k3fp6k7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDe4_PZptt6e1b-oYTju_Zt7AYFF3YOqCQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "115960016787-fkjj6gc2nhne86qhaq30psn43k3fp6k7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "115960016787-30eo4gqipf7avrp8nstdeijo2r7gn8bo.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.quest"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
