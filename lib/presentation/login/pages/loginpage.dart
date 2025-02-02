@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:quest/core/config/assets/app_images.dart';
 import 'package:quest/core/config/assets/app_vectors.dart';
 import 'package:quest/presentation/info/pages/infopage.dart';
+import 'package:quest/services/auth/auth.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -75,7 +76,6 @@ class LoginPage extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 20),
 
-                                // Login Buttons
                                 _buildLoginButton(
                                   icon: AppVectors.man,
                                   text: "CONNECT AS GUEST",
@@ -87,7 +87,7 @@ class LoginPage extends StatelessWidget {
                                 _buildLoginButton(
                                   icon: AppVectors.google1,
                                   text: "CONNECT WITH GOOGLE",
-                                  onPressed: () {},
+                                  onPressed: () => AuthServices().signInWithGoogle(),
                                 ),
                                 _buildLoginButton(
                                   icon: AppVectors.x,
