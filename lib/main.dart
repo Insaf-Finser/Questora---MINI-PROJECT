@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quest/core/config/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:quest/presentation/splash/pages/splash.dart';
+import 'package:quest/presentation/chardescpage/pages/chardescpage.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home:  const SplashPage()
+      home:  const CharacterCreationPage()
     );
   }
 }

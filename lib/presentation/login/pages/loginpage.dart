@@ -87,7 +87,19 @@ class LoginPage extends StatelessWidget {
                                 _buildLoginButton(
                                   icon: AppVectors.google1,
                                   text: "CONNECT WITH GOOGLE",
-                                  onPressed: () => AuthServices().signInWithGoogle(),
+                                  onPressed: () onPressed: () async {
+                                  bool success = await AuthServices().signInWithGoogle();
+                                  if (success) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const InfoPage()),
+                                    );
+                                  } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Google Sign-In Failed")),
+                                      );
+                                    }
+                                  },
                                 ),
                                 _buildLoginButton(
                                   icon: AppVectors.x,
