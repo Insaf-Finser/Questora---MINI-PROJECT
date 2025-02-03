@@ -1,7 +1,6 @@
-# quest
+# QUESTORA
 
-A new Flutter project.
-
+An Interactive Story Telling App Project
 ## Getting Started
 
 This project is a starting point for a Flutter application.
