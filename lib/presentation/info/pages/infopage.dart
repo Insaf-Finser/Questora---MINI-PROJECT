@@ -6,7 +6,7 @@ import 'package:quest/presentation/chardescpage/pages/chardescpage.dart';
 import '../../../../../core/config/assets/app_images.dart';
 
 class InfoPage extends StatefulWidget {
-  const InfoPage({super.key});
+  const InfoPage({super.key, required String text});
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -175,58 +175,52 @@ class _InfoPageState extends State<InfoPage> {
     );
   }
 
-  // Reusable Scroll Wheel Widget (ListWheelScrollView) with Title
-  Widget _buildScrollWheelWithTitle({
-    required String title,
-    required List<int> items,
-    required ValueChanged<int> onChanged,
-  }) {
-    return Column(
-      children: [
-        // Title
-        Text(
-          title,
-          style: TextStyle(
-            color: const Color.fromARGB(255, 194, 172, 98),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+  
+Widget _buildScrollWheelWithTitle({
+  required String title,
+  required List<int> items,
+  required ValueChanged<int> onChanged,
+}) {
+  return Column(
+    children: [
+      // Title
+      Text(
+        title,
+        style: TextStyle(
+          color: const Color.fromARGB(255, 194, 172, 98),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
         ),
-        const SizedBox(height: 10),
+      ),
+      const SizedBox(height: 10),
 
-        // ListWheelScrollView
-        SizedBox(
-          width: 80,
-          height: 60,
-          child: ListWheelScrollView.useDelegate(
-            itemExtent: 50, // Height of each item
-            physics: FixedExtentScrollPhysics(),
-            onSelectedItemChanged: (index) {
-              onChanged(items[index]);
-            },
-            childDelegate: ListWheelChildBuilderDelegate(
-              builder: (context, index) {
-                return Center(
-                  child: Opacity(
-                    opacity: 1.0, // Lower opacity for non-centered items
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(), // Apply blur to non-centered items
-                      child: Text(
-                        items[index].toString(),
-                        style: TextStyle(
-                          color: const Color.fromARGB(255, 194, 172, 98),
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
+      // ListWheelScrollView with improved visibility
+      SizedBox(
+        width: 80,
+        height: 60, // Increased height for better visibility
+        child: ListWheelScrollView.useDelegate(
+          itemExtent: 50, // Increased item height
+          physics: FixedExtentScrollPhysics(),
+          onSelectedItemChanged: (index) {
+            onChanged(items[index]);
+          },
+          childDelegate: ListWheelChildBuilderDelegate(
+            builder: (context, index) {
+              return Center(
+                child: Text(
+                  items[index].toString(),
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 194, 172, 98),
+                    fontSize: 20,
                   ),
-                );
-              },
-              childCount: items.length,
-            ),
+                ),
+              );
+            },
+            childCount: items.length,
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }

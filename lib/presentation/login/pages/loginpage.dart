@@ -1,11 +1,13 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:quest/core/config/assets/app_images.dart';
 import 'package:quest/core/config/assets/app_vectors.dart';
+import 'package:quest/presentation/chardescpage/pages/chardescpage.dart';
 import 'package:quest/presentation/info/pages/infopage.dart';
 import 'package:quest/services/auth/auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -81,26 +83,43 @@ class LoginPage extends StatelessWidget {
                                   text: "CONNECT AS GUEST",
                                   onPressed: () {
                                     Navigator.pushReplacement(
-                                        context, MaterialPageRoute(builder: (context) => const InfoPage()));
+                                        context, MaterialPageRoute(builder: (context) => const InfoPage(text :'Guest')));
                                   },
                                 ),
                                 _buildLoginButton(
                                   icon: AppVectors.google1,
                                   text: "CONNECT WITH GOOGLE",
-                                  onPressed: () onPressed: () async {
-                                  bool success = await AuthServices().signInWithGoogle();
-                                  if (success) {
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const InfoPage()),
-                                    );
-                                  } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Google Sign-In Failed")),
-                                      );
-                                    }
+                                  onPressed: () async {
+                                    
+
+                                      String? userName = await AuthServices().signInWithGoogle();
+
+                                      if (userName != null) {
+                                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                                        bool hasLoggedInBefore = prefs.getBool('hasLoggedInBefore') ?? false;
+
+                                        // Navigate with userName
+                                        if (!hasLoggedInBefore) {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => InfoPage(text: userName)),
+                                          );
+                                        } else {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const CharacterCreationPage()), // Adjust as needed
+                                          );
+                                        }
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text("Google Sign-In Failed")),
+                                        );
+                                      }
+                                    
+                                    
                                   },
                                 ),
+
                                 _buildLoginButton(
                                   icon: AppVectors.x,
                                   text: "CONNECT WITH TWITTER",

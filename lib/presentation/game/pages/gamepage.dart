@@ -77,17 +77,37 @@ class GamePageState extends State<GamePage> {
             ? "Keep the story appropriate for teenagers, with moderate complexity and action."
             : "Allow for mature storytelling with deeper themes and challenges.";
 
-    String prompt = "You are an AI storyteller crafting a deep and immersive narrative with complex branching paths.\n" 
+    String introduction;
+    if (_storyProgress == 0) {
+      switch (widget.genre.toLowerCase()) {
+        case "fantasy":
+          introduction = "Long ago, in a kingdom forgotten by time...";
+          break;
+        case "sci-fi":
+          introduction = "In the distant reaches of the cosmos, a lone traveler awakens...";
+          break;
+        case "mystery":
+          introduction = "The rain poured heavily as the detective examined the scene...";
+          break;
+        default:
+          introduction = "Once upon a time, a great journey began...";
+      }
+    } else {
+      introduction = "Ensure the narrative builds on previous events, making choices impact future events logically.";
+    }
+
+    String prompt = "You are an AI storyteller crafting a deep and immersive narrative with complex branching paths that last atmost an hour but can end early by risky choices.\n" 
                     "Character Name: ${widget.characterName}\n" 
                     "Character Description: ${widget.characterDescription}\n" 
                     "Genre: ${widget.genre}\n" 
                     "Story so far: ${_storyHistory.join(' ')}\n"
                     "Most Recent Choice: $userChoice\n" 
                     "Ensure the narrative builds on previous events, making choices impact future events logically.\n" 
+                    "$introduction\n"
                     "$contentRating\n"
                     "Introduce objectives, unexpected plot twists, and character interactions based on past decisions.\n" 
-                    "Provide a rich, immersive story continuation in well-formatted paragraph, followed by at least three and at most five meaningful choices.\n" 
-                    "Choices should be diverse: some safe, some risky, some creative. Format them as a numbered list. Use short phrases instead of  sentences. \n";
+                    "Provide a rich, immersive story continuation in well-formatted single paragraph containing no more than 120 words, followed by at least three and at most five meaningful choices.\n" 
+                    "Choices should be diverse: some safe, some risky, some creative and some dangerous. Format them as a numbered list. Use short phrases instead of  sentences. \n";
 
     String apiKey = dotenv.env['API_KEY'] ?? '';
     final response = await http.post(
@@ -97,7 +117,7 @@ class GamePageState extends State<GamePage> {
         "Content-Type": "application/json",
       },
       body: jsonEncode({
-        "model": "meta-llama/llama-3.2-3b-instruct:free",
+        "model": "mistralai/mistral-7b-instruct:free",
         "prompt": prompt,
         "max_tokens": 600,
         "temperature": 0.85,

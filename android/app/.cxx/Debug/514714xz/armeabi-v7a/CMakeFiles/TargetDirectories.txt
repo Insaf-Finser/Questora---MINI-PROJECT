@@ -1,0 +1,2 @@
+E:/MINI PROJECT/NEWW/quest/android/app/.cxx/Debug/514714xz/armeabi-v7a/CMakeFiles/edit_cache.dir
+E:/MINI PROJECT/NEWW/quest/android/app/.cxx/Debug/514714xz/armeabi-v7a/CMakeFiles/rebuild_cache.dir
