@@ -106,7 +106,7 @@ class GamePageState extends State<GamePage> {
                     "$introduction\n"
                     "$contentRating\n"
                     "Introduce objectives, unexpected plot twists, and character interactions based on past decisions.\n" 
-                    "Provide a rich, immersive story continuation in well-formatted single paragraph containing no more than 120 words, followed by at least three and at most five meaningful choices.\n" 
+                    "Provide a rich, immersive story continuation in well-formatted single paragraph containing no more than 200 words, followed by at least three and at most five meaningful choices.\n" 
                     "Choices should be diverse: some safe, some risky, some creative and some dangerous. Format them as a numbered list. Use short phrases instead of  sentences. \n";
 
     String apiKey = dotenv.env['API_KEY'] ?? '';
@@ -117,7 +117,7 @@ class GamePageState extends State<GamePage> {
         "Content-Type": "application/json",
       },
       body: jsonEncode({
-        "model": "mistralai/mistral-7b-instruct:free",
+        "model": "google/gemini-2.0-flash-exp:free",
         "prompt": prompt,
         "max_tokens": 600,
         "temperature": 0.85,

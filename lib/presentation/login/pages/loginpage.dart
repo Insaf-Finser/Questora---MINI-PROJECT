@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:quest/core/config/assets/app_images.dart';
@@ -11,6 +12,63 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
+
+  Future<void> _handleLogin(BuildContext context, {bool isGuest = false}) async {
+    try {
+      User? user;
+      String userName = "Guest";
+
+      if (!isGuest) {
+        bool success = await AuthServices().signInWithGoogle();
+        if (!success) {
+          _showError(context, "Google Sign-In Failed");
+          return;
+        }
+        user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          _showError(context, "User not found. Please try again.");
+          return;
+        }
+        userName = user.displayName ?? "Adventurer";
+      }
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String userId = user?.uid ?? "guest"; // Use "guest" as ID for guest users
+      bool isFirstLogin = !(prefs.getBool('${userId}_hasLoggedInBefore') ?? false);
+
+      if (isFirstLogin) {
+        await prefs.setBool('${userId}_hasLoggedInBefore', true); // Mark as logged in
+
+        // First-time login → Go to Info Page first, then Character Creation
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InfoPage(
+              text: userName,
+            ),
+          ),
+        );
+      } else {
+        // Returning user → Go directly to Character Creation Page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CharacterCreationPage()),
+        );
+      }
+    } catch (e) {
+      _showError(context, "An error occurred. Please try again.");
+    }
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,35 +147,7 @@ class LoginPage extends StatelessWidget {
                                 _buildLoginButton(
                                   icon: AppVectors.google1,
                                   text: "CONNECT WITH GOOGLE",
-                                  onPressed: () async {
-                                    
-
-                                      String? userName = await AuthServices().signInWithGoogle();
-
-                                      if (userName != null) {
-                                        SharedPreferences prefs = await SharedPreferences.getInstance();
-                                        bool hasLoggedInBefore = prefs.getBool('hasLoggedInBefore') ?? false;
-
-                                        // Navigate with userName
-                                        if (!hasLoggedInBefore) {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => InfoPage(text: userName)),
-                                          );
-                                        } else {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => const CharacterCreationPage()), // Adjust as needed
-                                          );
-                                        }
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text("Google Sign-In Failed")),
-                                        );
-                                      }
-                                    
-                                    
-                                  },
+                                  onPressed: () => _handleLogin(context),
                                 ),
 
                                 _buildLoginButton(
