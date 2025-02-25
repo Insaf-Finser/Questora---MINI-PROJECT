@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:quest/core/config/assets/app_images.dart';
 import 'package:quest/core/config/assets/app_vectors.dart';
-import 'package:quest/presentation/chardescpage/pages/chardescpage.dart';
 import 'package:quest/presentation/info/pages/infopage.dart';
+import 'package:quest/presentation/start/start.dart';
 import 'package:quest/services/auth/auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,7 +52,7 @@ class LoginPage extends StatelessWidget {
         // Returning user → Go directly to Character Creation Page
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const CharacterCreationPage()),
+          MaterialPageRoute(builder: (context) => const MainMenuScreen()),
         );
       }
     } catch (e) {

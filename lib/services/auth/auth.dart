@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class AuthServices {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -29,11 +32,18 @@ class AuthServices {
           await prefs.setBool('${user.uid}_hasLoggedInBefore', true);
         }
 
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          SnackBar(content: Text('Successfully signed in with Google')),
+        );
+
         return true; // Successful login
       }
       return false;
     } catch (e) {
-      print("Google Sign-In Error: $e");
+      
+      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+        SnackBar(content: Text('Failed to sign in with Google: $e')),
+      );
       return false;
     }
   }

@@ -1,7 +1,6 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:quest/presentation/chardescpage/pages/chardescpage.dart';
+import 'package:quest/presentation/start/start.dart';
 
 import '../../../../../core/config/assets/app_images.dart';
 
@@ -146,7 +145,7 @@ class _InfoPageState extends State<InfoPage> {
                         ? () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const CharacterCreationPage()),
+                              MaterialPageRoute(builder: (context) => const MainMenuScreen()),
                             );
                           }
                         : null,

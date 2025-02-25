@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class LoadGameScreen extends StatelessWidget {
+  const LoadGameScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
