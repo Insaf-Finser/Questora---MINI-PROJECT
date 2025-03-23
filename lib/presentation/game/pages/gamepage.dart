@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hidden_drawer_menu/hidden_drawer_menu.dart';
 
 class GamePage extends StatefulWidget {
   final String characterName;
@@ -24,11 +25,49 @@ class GamePage extends StatefulWidget {
   GamePageState createState() => GamePageState();
 }
 
+class StoryNode {
+  String story;
+  String choice;
+  StoryNode? next;
+
+  StoryNode({required this.story, required this.choice, this.next});
+}
+
+class StoryHistory {
+  StoryNode? head;
+  StoryNode? tail;
+
+  void addStory(String story, String choice) {
+    StoryNode newNode = StoryNode(story: story, choice: choice);
+    if (head == null) {
+      head = newNode;
+    } else {
+      tail!.next = newNode;
+    }
+    tail = newNode;
+  }
+
+  List<String> toList() {
+    List<String> history = [];
+    StoryNode? current = head;
+    while (current != null) {
+      history.add("Choice: ${current.choice} → Story: ${current.story}");
+      current = current.next;
+    }
+    return history;
+  }
+
+  void clear() {
+    head = null;
+    tail = null;
+  }
+}
+
 class GamePageState extends State<GamePage> {
   String _storyText = "";
   bool _isTyping = false;
   List<String> _choices = [];
-  List<String> _storyHistory = [];
+  StoryHistory _storyHistory = StoryHistory(); // Use LinkedList
   int _storyProgress = 0;
   int _achievements = 0;
 
@@ -41,27 +80,26 @@ class GamePageState extends State<GamePage> {
 
   Future<void> _loadGameState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _storyHistory = prefs.getStringList("storyHistory") ?? [];
-      _storyProgress = prefs.getInt("storyProgress") ?? 0;
-      _achievements = prefs.getInt("achievements") ?? 0;
-    });
+    List<String>? savedHistory = prefs.getStringList("storyHistory");
+    _storyProgress = prefs.getInt("storyProgress") ?? 0;
+    _achievements = prefs.getInt("achievements") ?? 0;
+
+    if (savedHistory != null) {
+      _storyHistory.clear();
+      for (String entry in savedHistory) {
+        List<String> parts = entry.split(" → Story: ");
+        if (parts.length == 2) {
+          _storyHistory.addStory(parts[1], parts[0].replaceFirst("Choice: ", ""));
+        }
+      }
+    }
   }
 
   Future<void> _saveGameState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList("storyHistory", _storyHistory);
+    await prefs.setStringList("storyHistory", _storyHistory.toList());
     await prefs.setInt("storyProgress", _storyProgress);
     await prefs.setInt("achievements", _achievements);
-  }
-
-  void _trackAchievements() {
-    if (_storyProgress % 5 == 0) {
-      setState(() {
-        _achievements++;
-      });
-      _saveGameState();
-    }
   }
 
   Future<void> _generateStory(String userChoice) async {
@@ -69,6 +107,12 @@ class GamePageState extends State<GamePage> {
       _isTyping = true;
       _storyText = "";
       _choices = [];
+    
+
+     if (_storyProgress == 0) {
+      _storyHistory.clear();
+      _saveGameState();
+    }
     });
 
     String contentRating = widget.age < 13
@@ -100,14 +144,16 @@ class GamePageState extends State<GamePage> {
                     "Character Name: ${widget.characterName}\n" 
                     "Character Description: ${widget.characterDescription}\n" 
                     "Genre: ${widget.genre}\n" 
-                    "Story so far: ${_storyHistory.join(' ')}\n"
+                    "Story so far: ${_storyHistory.toList().join(' ')}\n"
                     "Most Recent Choice: $userChoice\n" 
                     "Ensure the narrative builds on previous events, making choices impact future events logically.\n" 
                     "$introduction\n"
                     "$contentRating\n"
                     "Introduce objectives, unexpected plot twists, and character interactions based on past decisions.\n" 
                     "Provide a rich, immersive story continuation in well-formatted single paragraph containing no more than 200 words, followed by at least three and at most five meaningful choices.\n" 
-                    "Choices should be diverse: some safe, some risky, some creative and some dangerous. Format them as a numbered list. Use short phrases instead of  sentences. \n";
+                    "Choices should be diverse: some safe, some risky, some creative and some dangerous. Format them as a numbered list. Use short phrases instead of  sentences. \n"
+                    "Followed by at least three and at most five meaningful choices.\n";
+                    
 
     String apiKey = dotenv.env['API_KEY'] ?? '';
     final response = await http.post(
@@ -132,13 +178,12 @@ class GamePageState extends State<GamePage> {
       String generatedStory = generatedText.split("\nChoices:")[0].trim();
 
       setState(() {
-        _storyText = generatedStory.replaceAll("\n", "\n\n");
-        _storyHistory.add("Choice: $userChoice → Story: $_storyText");
+        _storyText = generatedStory.replaceAll(RegExp(r'\n\d+\.\s.*'), "").trim();
+        _storyHistory.addStory(_storyText, userChoice);
         _storyProgress++;
         _isTyping = false;
         _choices = extractedChoices;
       });
-      _trackAchievements();
       _saveGameState();
     } else {
       setState(() {
@@ -154,7 +199,7 @@ class GamePageState extends State<GamePage> {
     for (Match match in regExp.allMatches(responseText)) {
       choices.add(match.group(1)!);
     }
-    return choices.isNotEmpty ? choices : ["Explore the ruins", "Seek guidance from a mentor", "Venture into the unknown"];
+    return choices;
   }
 
   void _onChoiceSelected(String choice) {
@@ -163,44 +208,71 @@ class GamePageState extends State<GamePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Questora - Story Mode"),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Center(
-              child: Text("Achievements: $_achievements", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+    return HiddenDrawerMenu(
+      backgroundColorMenu: Colors.blueGrey,
+      screens: [
+        ScreenHiddenDrawer(
+          ItemHiddenMenu(
+            name: "",
+            baseStyle: TextStyle(color: Colors.white),
+            selectedStyle: TextStyle(color: Colors.yellow),
+          ),
+          Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_storyText, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, height: 1.5)),
+                    if (_isTyping) ...[SizedBox(height: 10), LinearProgressIndicator()],
+                    SizedBox(height: 20),
+                    if (!_isTyping)
+                      ..._choices.map(
+                        (choice) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: ElevatedButton(
+                            onPressed: () => _onChoiceSelected(choice),
+                            child: Text(choice),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _storyText,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, height: 1.5),
-            ),
-            if (_isTyping) ...[
-              SizedBox(height: 10),
-              LinearProgressIndicator()
-            ],
-            SizedBox(height: 20),
-            if (!_isTyping) ..._choices.map((choice) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: ElevatedButton(
-                onPressed: () => _onChoiceSelected(choice),
-                child: Text(choice),
-              ),
-            )).toList(),
-          ],
         ),
-      ),
-      ),
+        ScreenHiddenDrawer(
+          ItemHiddenMenu(
+            name: "Story History",
+            baseStyle: TextStyle(color: Colors.white),
+            selectedStyle: TextStyle(color: Colors.yellow),
+          ),
+          Scaffold(
+            appBar: AppBar(title: Text("")),
+            body: _storyHistory.toList().isEmpty
+                ? Center(child: Text("No story history yet.", style: TextStyle(fontSize: 16)))
+                : ListView.builder(
+                    padding: EdgeInsets.all(16),
+                    itemCount: _storyHistory.toList().length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        elevation: 10,
+                        margin: EdgeInsets.symmetric(vertical: 20),
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Text(
+                            _storyHistory.toList()[index],
+                            style: TextStyle(fontSize: 16, height: 1.4),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

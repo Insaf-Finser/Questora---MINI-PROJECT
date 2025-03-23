@@ -1,9 +1,11 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:quest/core/config/theme/app_colors.dart';
 import 'package:quest/presentation/login/pages/loginpage.dart';
+import 'package:quest/presentation/start/start.dart';
 
 import '../../../core/config/assets/app_images.dart';
 import '../../../core/config/assets/app_vectors.dart';
@@ -15,9 +17,11 @@ class GetStartedPage extends StatefulWidget {
   GetStartedPageState createState() => GetStartedPageState();
 }
 
+
 class GetStartedPageState extends State<GetStartedPage> {
   bool _isTaped = false;
   double _scale = 1.0; 
+  FirebaseAuth auth = FirebaseAuth.instance;
 
   void _onTap() {
     setState(() {
@@ -25,20 +29,37 @@ class GetStartedPageState extends State<GetStartedPage> {
       _scale = 0.7; // Shrink the button before expanding
     });
 
-    Future.delayed(const Duration(milliseconds: 400), () {
+    
+
+    if (auth.currentUser != null) {
+      Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const MainMenuScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation, // Fade effect
+          child: child,
+        );
+        },
+      ),
+      );
+    } else {
+      Future.delayed(const Duration(milliseconds: 400), () {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation, // Fade effect
-              child: child,
-            );
-          },
+        pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+          opacity: animation, // Fade effect
+          child: child,
+          );
+        },
         ),
       );
-    });
+      });
+    }
   }
 
   @override

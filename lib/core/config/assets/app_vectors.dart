@@ -8,4 +8,5 @@ class AppVectors{
   static const String facebook = '${basePath}fb_icon$format';
   static const String x = '${basePath}x_icon$format';
   static const String man = '${basePath}man_icon$format';
+  static const String back = '${basePath}backbutton$format';
 }
