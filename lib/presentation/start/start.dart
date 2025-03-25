@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
+import 'package:quest/core/config/assets/app_images.dart'; 
 import 'package:quest/presentation/chardescpage/pages/chardescpage.dart';
 import 'package:quest/presentation/load.dart'; 
 
@@ -14,7 +15,7 @@ class MainMenuScreen extends StatelessWidget {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'assets/fir.png',  // Main Menu Background
+              AppImages.mainBG,  // Main Menu Background
               fit: BoxFit.cover,
             ),
           ),

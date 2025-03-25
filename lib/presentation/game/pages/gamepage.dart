@@ -1,5 +1,7 @@
 // ignore_for_file: unnecessary_to_list_in_spreads
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -67,9 +69,10 @@ class GamePageState extends State<GamePage> {
   String _storyText = "";
   bool _isTyping = false;
   List<String> _choices = [];
-  StoryHistory _storyHistory = StoryHistory(); // Use LinkedList
+  final StoryHistory _storyHistory = StoryHistory(); // Use LinkedList
   int _storyProgress = 0;
   int _achievements = 0;
+  Uint8List? _backgroundImage;
 
   @override
   void initState() {
@@ -185,6 +188,8 @@ class GamePageState extends State<GamePage> {
         _choices = extractedChoices;
       });
       _saveGameState();
+
+      _generateBackgroundImage(_storyText);
     } else {
       setState(() {
         _storyText = "Error loading story. Please try again.";
@@ -192,6 +197,8 @@ class GamePageState extends State<GamePage> {
       });
     }
   }
+  String backgroundImageUrl = "https://source.unsplash.com/random/800x600"; // Default placeholder image
+
 
   List<String> _extractChoices(String responseText) {
     List<String> choices = [];
@@ -206,73 +213,358 @@ class GamePageState extends State<GamePage> {
     _generateStory(choice);
   }
 
+  Future<void> _generateBackgroundImage(String sceneDescription) async {
+    try {
+      String apiKey2 = dotenv.env['API_KEY2'] ?? '';
+      final imageResponse = await http.post(
+        Uri.parse("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"),
+        headers: {
+          "Authorization": "Bearer $apiKey2",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"inputs": sceneDescription}),
+      );
+
+      if (imageResponse.statusCode == 200) {
+        setState(() {
+          _backgroundImage = imageResponse.bodyBytes;
+        });
+      } else {
+        debugPrint("Failed to load image: ${imageResponse.statusCode}");
+        debugPrint("Response body: ${imageResponse.body}");
+      }
+    } catch (e) {
+      debugPrint("Error generating image: $e");
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    return HiddenDrawerMenu(
-      backgroundColorMenu: Colors.blueGrey,
-      screens: [
-        ScreenHiddenDrawer(
-          ItemHiddenMenu(
-            name: "",
-            baseStyle: TextStyle(color: Colors.white),
-            selectedStyle: TextStyle(color: Colors.yellow),
-          ),
-          Scaffold(
-            body: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_storyText, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, height: 1.5)),
-                    if (_isTyping) ...[SizedBox(height: 10), LinearProgressIndicator()],
-                    SizedBox(height: 20),
-                    if (!_isTyping)
-                      ..._choices.map(
-                        (choice) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: ElevatedButton(
-                            onPressed: () => _onChoiceSelected(choice),
-                            child: Text(choice),
+    return Scaffold(
+      body: Stack(
+          children: [HiddenDrawerMenu(
+            backgroundColorMenu: const Color.fromARGB(255, 97, 97, 97),
+            tittleAppBar: const Text(""),
+            backgroundColorAppBar: Colors.transparent,
+            slidePercent: 40.0,
+            typeOpen: TypeOpen.FROM_LEFT,
+            boxShadow: [
+              BoxShadow(color: const Color.fromARGB(255, 255, 255, 255), blurRadius: 20.0),
+            ],
+            leadingAppBar: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Icon(Icons.menu, size: 30),
+            ),
+            actionsAppBar: [
+
+              Spacer(),
+              IconButton(
+                icon: Icon(Icons.follow_the_signs_rounded),
+                onPressed: () {
+                  // Add functionality for the settings icon here
+                },
+              ),
+              SizedBox(width: 20),
+            ],
+            
+          
+            screens: [
+              ScreenHiddenDrawer(
+                ItemHiddenMenu(
+                  name: "Resume",
+                  baseStyle: TextStyle(color: Colors.white),
+                  selectedStyle: TextStyle(color: Colors.yellow),
+                ),
+                Scaffold(
+                  body: Stack(
+                    children: [
+                      _backgroundImage != null
+                ? Image.memory(_backgroundImage!, fit: BoxFit.fill, width: double.infinity, height: double.infinity)
+                : Container(color: Colors.black),
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(50.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Container(
+                                  padding: EdgeInsets.all(16),
+                                  width: MediaQuery.of(context).size.width * 0.8,
+                                  height: MediaQuery.of(context).size.height * 0.6,
+                                  decoration: BoxDecoration(
+                                  color: const Color.fromARGB(43, 255, 253, 253),
+                                  border: Border.all(color: const Color.fromARGB(0, 0, 0, 0), width: 2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: SingleChildScrollView(
+                                  child: Column(
+                                    
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                    Text(
+                                      _storyText,
+                                      style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.5,
+                                      fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                    if (_isTyping)
+                                      ...[
+                                      SizedBox(height: 10),
+                                      CircularProgressIndicator(),
+                                      ],
+                                    ],
+                                  ),
+                                  ),
+                                ),
+                                SizedBox(height: MediaQuery.of(context).size.height * 0.04),
+                                if (!_isTyping)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                  ChoiceScroller(
+                                    choices: _choices,
+                                    onChoiceSelected: _onChoiceSelected,
+                                  ),
+                                  SizedBox(width: 1.6),
+                                  IconButton(
+                                    icon: Icon(Icons.edit),
+                                    onPressed: () {
+                                      // Add functionality for the settings icon here
+                                    },
+                                  ),
+                                  ],
+                                )
+                            
+                      
+                            ],
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
+                ),
+              ),
+              ScreenHiddenDrawer(
+                ItemHiddenMenu(
+                  name: "Story History",
+                  baseStyle: TextStyle(color: Colors.white),
+                  selectedStyle: TextStyle(color: Colors.yellow),
+                ),
+                Scaffold(
+                  body: _storyHistory.toList().isEmpty
+                      ? Center(child: Text("No story history yet.", style: TextStyle(fontSize: 16)))
+                      : ListView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: _storyHistory.toList().length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              elevation: 10,
+                              margin: EdgeInsets.symmetric(vertical: 20),
+                              child: Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Text(
+                                  _storyHistory.toList()[index],
+                                  style: TextStyle(fontSize: 16, height: 1.4),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ],
+          ),]
+      ),
+    );
+  }
+}
+
+
+class ChoiceScroller extends StatefulWidget {
+  final List<String> choices;
+  final Function(String) onChoiceSelected;
+
+  const ChoiceScroller({super.key, required this.choices, required this.onChoiceSelected});
+
+  @override
+  _ChoiceScrollerState createState() => _ChoiceScrollerState();
+}
+
+class _ChoiceScrollerState extends State<ChoiceScroller> {
+  late PageController _pageController;
+  double _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.7);
+    _pageController.addListener(() {
+      setState(() {
+        _currentPage = _pageController.page ?? 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.15,
+      width: MediaQuery.of(context).size.width * 0.675,
+      padding: const EdgeInsets.only(top:0 , bottom: 10 , left: 10 , right: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 2),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20), // Adds spacing for indicator
+            child: PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              itemCount: widget.choices.length,
+              itemBuilder: (context, index) {
+                double distance = (index - _currentPage).abs();
+                double scale = 1.0 - (distance * 0.15);
+                scale = scale.clamp(0.85, 1.0);
+
+                double opacity = 1.0 - (distance * 0.3);
+                opacity = opacity.clamp(0.6, 1.0);
+
+                return Transform.scale(
+                  scale: scale,
+                  child: Opacity(
+                    opacity: opacity,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Center(
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.6,
+                        height: 80, // Allow the button height to adjust dynamically
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            side: BorderSide(color: const Color.fromARGB(255, 95, 95, 95), width: 2),
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          onPressed: () => widget.onChoiceSelected(widget.choices[index]),
+                          child: Text(
+                            widget.choices[index],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ),
+                      ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Page Indicator Dots
+          Positioned(
+            right: 2, 
+            top: 0,
+            bottom: 0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                widget.choices.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  width: index == _currentPage.round() ? 10 : 6,
+                  height: index == _currentPage.round() ? 10 : 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: index == _currentPage.round() ? Colors.black : Colors.grey,
+                  ),
                 ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class StoryBackground extends StatefulWidget {
+  final String storyText;
+
+  const StoryBackground({super.key, required this.storyText});
+
+  @override
+  @override
+  _StoryBackgroundState createState() => _StoryBackgroundState();
+}
+
+class StoryBackgroundState {
+}
+
+class _StoryBackgroundState extends State<StoryBackground> {
+  String imageUrl = "https://via.placeholder.com/600x400"; // Default placeholder image
+
+  @override
+  void didUpdateWidget(StoryBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.storyText != widget.storyText) {
+      fetchNewBackground(widget.storyText);
+    }
+  }
+
+  Future<void> fetchNewBackground(String storyText) async {
+    String generatedImageUrl = await generateAIImage(storyText);
+    setState(() {
+      imageUrl = generatedImageUrl;
+    });
+  }
+
+  Future<String> generateAIImage(String prompt) async {
+    // Simulate API Call - Replace with real API
+    await Future.delayed(const Duration(seconds: 2)); // Simulate API delay
+    return "https://via.placeholder.com/600x400?text=${Uri.encodeComponent(prompt)}"; // Replace with real response
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(imageUrl),
+          fit: BoxFit.cover,
         ),
-        ScreenHiddenDrawer(
-          ItemHiddenMenu(
-            name: "Story History",
-            baseStyle: TextStyle(color: Colors.white),
-            selectedStyle: TextStyle(color: Colors.yellow),
+      ),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(10),
           ),
-          Scaffold(
-            appBar: AppBar(title: Text("")),
-            body: _storyHistory.toList().isEmpty
-                ? Center(child: Text("No story history yet.", style: TextStyle(fontSize: 16)))
-                : ListView.builder(
-                    padding: EdgeInsets.all(16),
-                    itemCount: _storyHistory.toList().length,
-                    itemBuilder: (context, index) {
-                      return Card(
-                        elevation: 10,
-                        margin: EdgeInsets.symmetric(vertical: 20),
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text(
-                            _storyHistory.toList()[index],
-                            style: TextStyle(fontSize: 16, height: 1.4),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+          child: Text(
+            widget.storyText,
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
         ),
-      ],
+      ),
     );
   }
 }
