@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:quest/presentation/login/pages/loginpage.dart';
 import 'package:quest/presentation/start/start.dart';
 
 import '../../../../../core/config/assets/app_images.dart';
@@ -18,6 +18,19 @@ class _InfoPageState extends State<InfoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor:Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
+            onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()), // Navigate to the login page
+            );
+          },
+        ),
+      ),
       body: Stack(
         alignment: Alignment.center,
         children: [

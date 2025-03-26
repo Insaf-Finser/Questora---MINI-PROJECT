@@ -44,6 +44,8 @@ dependencies:
   google_sign_in: ^6.2.2
   popover: ^0.3.1
   hidden_drawer_menu: ^3.0.1
+  sliding_up_panel: ^2.0.0
+  
 
 dev_dependencies:
   flutter_test:

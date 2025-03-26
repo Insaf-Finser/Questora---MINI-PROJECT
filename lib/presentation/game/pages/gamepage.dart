@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_to_list_in_spreads
 
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -66,10 +67,12 @@ class StoryHistory {
 }
 
 class GamePageState extends State<GamePage> {
-  String _storyText = "";
-  bool _isTyping = false;
+  String _storyText = ""; // Full story text
+  String _displayedStoryText = ""; // Text displayed with typewriter effect
+  bool _isTyping = false; // Whether the typewriter effect is active
+  Timer? _typewriterTimer; // Timer for typewriter effect
   List<String> _choices = [];
-  final StoryHistory _storyHistory = StoryHistory(); // Use LinkedList
+  final StoryHistory _storyHistory = StoryHistory();
   int _storyProgress = 0;
   int _achievements = 0;
   Uint8List? _backgroundImage;
@@ -79,6 +82,12 @@ class GamePageState extends State<GamePage> {
     super.initState();
     _loadGameState();
     _generateStory("");
+  }
+
+  @override
+  void dispose() {
+    _typewriterTimer?.cancel(); // Cancel the timer when the widget is disposed
+    super.dispose();
   }
 
   Future<void> _loadGameState() async {
@@ -109,6 +118,7 @@ class GamePageState extends State<GamePage> {
     setState(() {
       _isTyping = true;
       _storyText = "";
+      _displayedStoryText = "";
       _choices = [];
     
 
@@ -196,7 +206,40 @@ class GamePageState extends State<GamePage> {
         _isTyping = false;
       });
     }
+
+    // Start the typewriter effect
+    _startTypewriterEffect();
   }
+
+  void _startTypewriterEffect() {
+    int index = 0;
+    _typewriterTimer?.cancel(); // Cancel any existing timer
+    setState(() {
+      _displayedStoryText = ""; // Reset displayed text to start typing from the top
+    });
+    _typewriterTimer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
+      if (index < _storyText.length) {
+        setState(() {
+          _displayedStoryText += _storyText[index];
+          index++;
+        });
+      } else {
+        timer.cancel();
+        setState(() {
+          _isTyping = false; // Typing is complete
+        });
+      }
+    });
+  }
+
+  void _skipTypewriterEffect() {
+    _typewriterTimer?.cancel(); // Cancel the timer
+    setState(() {
+      _displayedStoryText = _storyText; // Display the full story immediately
+      _isTyping = false; // Typing is complete
+    });
+  }
+
   String backgroundImageUrl = "https://source.unsplash.com/random/800x600"; // Default placeholder image
 
 
@@ -244,9 +287,12 @@ class GamePageState extends State<GamePage> {
     return Scaffold(
       body: Stack(
           children: [HiddenDrawerMenu(
+            
             backgroundColorMenu: const Color.fromARGB(255, 97, 97, 97),
             tittleAppBar: const Text(""),
             backgroundColorAppBar: Colors.transparent,
+            elevationAppBar: 0,
+            
             slidePercent: 40.0,
             typeOpen: TypeOpen.FROM_LEFT,
             boxShadow: [
@@ -262,7 +308,7 @@ class GamePageState extends State<GamePage> {
               IconButton(
                 icon: Icon(Icons.follow_the_signs_rounded),
                 onPressed: () {
-                  // Add functionality for the settings icon here
+                  
                 },
               ),
               SizedBox(width: 20),
@@ -277,16 +323,16 @@ class GamePageState extends State<GamePage> {
                   selectedStyle: TextStyle(color: Colors.yellow),
                 ),
                 Scaffold(
+                  extendBodyBehindAppBar: true, 
                   body: Stack(
                     children: [
                       _backgroundImage != null
-                ? Image.memory(_backgroundImage!, fit: BoxFit.fill, width: double.infinity, height: double.infinity)
+                ? Image.memory(_backgroundImage!, fit: BoxFit.fill, width: double.infinity, height: double.infinity )
                 : Container(color: Colors.black),
                       Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(50.0),
+                          padding: const EdgeInsets.all(40.0),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                                 Container(
                                   padding: EdgeInsets.all(16),
@@ -304,12 +350,15 @@ class GamePageState extends State<GamePage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                     Text(
-                                      _storyText,
+                                      
+                                      _displayedStoryText, // Display the text with typewriter effect
+                                      textAlign: TextAlign.justify,
                                       style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w500,
                                       height: 1.5,
                                       fontFamily: 'monospace',
+                                      color: Colors.black,
                                       ),
                                     ),
                                     if (_isTyping)
@@ -317,6 +366,15 @@ class GamePageState extends State<GamePage> {
                                       SizedBox(height: 10),
                                       CircularProgressIndicator(),
                                       ],
+                                    GestureDetector(
+                                      onTap: _skipTypewriterEffect, // Skip the typewriter effect on tap
+                                      child: Container(
+                                      color: Colors.transparent, // Ensure the container is tappable
+                                      child: _isTyping
+                                        ? const Text("") // Show the skip button only when typing
+                                        : const SizedBox.shrink(),
+                                      ),
+                                    ),
                                     ],
                                   ),
                                   ),
@@ -330,13 +388,64 @@ class GamePageState extends State<GamePage> {
                                     choices: _choices,
                                     onChoiceSelected: _onChoiceSelected,
                                   ),
-                                  SizedBox(width: 1.6),
-                                  IconButton(
+                                    SizedBox(width: 1.5),
+                                    IconButton(
                                     icon: Icon(Icons.edit),
                                     onPressed: () {
-                                      // Add functionality for the settings icon here
+                                      showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        TextEditingController _textController = TextEditingController();
+                                        return StatefulBuilder(
+                                        builder: (context, setState) {
+                                          return AlertDialog(
+                                          title: Text("Enter your choice"),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                            TextField(
+                                              controller: _textController,
+                                              maxLength: 50,
+                                              decoration: InputDecoration(
+                                              hintText: "Type your own choice here",
+                                              counterText: "${_textController.text.length}/50",
+                                              ),
+                                              onChanged: (value) {
+                                              setState(() {});
+                                              },
+                                            ),
+                                            if (_textController.text.length > 50)
+                                              Text(
+                                              "Limit exceeded!",
+                                              style: TextStyle(color: Colors.red, fontSize: 12),
+                                              ),
+                                            ],
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("Cancel"),
+                                            ),
+                                            TextButton(
+                                            onPressed: () {
+                                              String userInput = _textController.text.trim();
+                                              if (userInput.isNotEmpty && userInput.length <= 50) {
+                                              _onChoiceSelected(userInput);
+                                              }
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: Text("Submit"),
+                                            ),
+                                          ],
+                                          );
+                                        },
+                                        );
+                                      },
+                                      );
                                     },
-                                  ),
+                                    ),
                                   ],
                                 )
                             
@@ -423,7 +532,7 @@ class _ChoiceScrollerState extends State<ChoiceScroller> {
       width: MediaQuery.of(context).size.width * 0.675,
       padding: const EdgeInsets.only(top:0 , bottom: 10 , left: 10 , right: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black, width: 2),
+        border: Border.all(color: const Color.fromARGB(103, 0, 0, 0), width: 1),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Stack(
@@ -455,7 +564,7 @@ class _ChoiceScrollerState extends State<ChoiceScroller> {
                         height: 80, // Allow the button height to adjust dynamically
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
+                            backgroundColor: const Color.fromARGB(155, 255, 255, 255),
                             foregroundColor: Colors.black,
                             side: BorderSide(color: const Color.fromARGB(255, 95, 95, 95), width: 2),
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
