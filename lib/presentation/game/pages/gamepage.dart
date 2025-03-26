@@ -465,25 +465,86 @@ class GamePageState extends State<GamePage> {
                   selectedStyle: TextStyle(color: Colors.yellow),
                 ),
                 Scaffold(
-                  body: _storyHistory.toList().isEmpty
-                      ? Center(child: Text("No story history yet.", style: TextStyle(fontSize: 16)))
-                      : ListView.builder(
-                          padding: EdgeInsets.all(16),
-                          itemCount: _storyHistory.toList().length,
-                          itemBuilder: (context, index) {
-                            return Card(
-                              elevation: 10,
-                              margin: EdgeInsets.symmetric(vertical: 20),
-                              child: Padding(
-                                padding: EdgeInsets.all(12),
+                  body: Container(
+    decoration: BoxDecoration(
+      image: DecorationImage(
+        image: AssetImage("assets/images/history.jpg"), 
+        fit: BoxFit.cover, 
+      ),
+    ),
+    child: _storyHistory.toList().isEmpty
+        ? Center(
+            child: Text(
+              "No story history yet.",
+              style: TextStyle(fontSize: 16),
+            ),
+          )
+        : ListView.builder(
+            padding: EdgeInsets.all(25),
+            itemCount: _storyHistory.toList().length,
+            itemBuilder: (context, index) {
+              return Column(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return Dialog(
+                            child: Container(
+                              padding: EdgeInsets.all(20),
+                              child: SingleChildScrollView(
                                 child: Text(
                                   _storyHistory.toList()[index],
-                                  style: TextStyle(fontSize: 16, height: 1.4),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    height: 1.4,
+                                    fontFamily: 'Aladin-Regular',
+                                  ),
                                 ),
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: SizedBox(
+                      height: 200,
+                      child: Card(
+                        elevation: 10,
+                        color: const Color.fromARGB(133, 249, 248, 248),
+                        margin: EdgeInsets.symmetric(vertical: 20),
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Text(
+                            _storyHistory.toList()[index],
+                            maxLines: 5,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 18,
+                              height: 1.4,
+                              fontFamily: 'Aladin-Regular',
+                            ),
+                          ),
                         ),
+                      ),
+                    ),
+                  ),
+                  // Add an arrow symbol between cards
+                  if (index < _storyHistory.toList().length - 1) // Avoid adding an arrow after the last card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Icon(
+                        Icons.arrow_downward, // Arrow symbol
+                        size: 24,
+                        color: Colors.grey,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+  ),
                 ),
               ),
             ],
