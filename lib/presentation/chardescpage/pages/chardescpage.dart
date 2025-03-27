@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:popover/popover.dart';
@@ -32,6 +34,8 @@ class CharacterCreationPageState extends State<CharacterCreationPage> {
       await prefs.remove("storyProgress"); 
       await prefs.remove("achievements");  
 
+      int userAge = await _getUserAge();
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -39,12 +43,51 @@ class CharacterCreationPageState extends State<CharacterCreationPage> {
             characterName: _nameController.text,
             characterDescription: _descriptionController.text,
             genre: _genreController.text,
-            age: 10,
+            gender: _selectedGender,  // Added gender
+            playTime: _selectedTime.toInt(),
+            age: userAge,
           ),
         ),
       );
-    }
+    } else {
+    // Show error if fields are empty
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please fill all fields'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+  }
+
+  Future<int> _getUserAge() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final user = FirebaseAuth.instance.currentUser;
+    
+    if (user != null) {
+      // For authenticated users
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      return doc.data()?['age'] ?? 18; // Default age if not found
+    } else {
+      // For guest users
+      final username = prefs.getString('username');
+      if (username != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('guest_users')
+            .doc(username)
+            .get();
+        return doc.data()?['age'] ?? 18; // Default age if not found
+      }
+    }
+  } catch (e) {
+    debugPrint('Error fetching age: $e');
+  }
+  return 18; // Fallback default age
+}
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +135,7 @@ class CharacterCreationPageState extends State<CharacterCreationPage> {
                 ),
                 SizedBox(height: 70),
                 Container(
-                  height: 400,
+                  height: 600,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),

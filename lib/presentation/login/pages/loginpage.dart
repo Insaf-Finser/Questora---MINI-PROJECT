@@ -15,12 +15,11 @@ class LoginPage extends StatelessWidget {
   Future<void> _handleLogin(BuildContext context, bool isGuest) async {
   try {
     if (isGuest) {
-      const userName = "Guest";
       if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => InfoPage(text: userName),
+          builder: (_) => InfoPage(),
         ),
       );
       return; // Exit early for guest login
@@ -36,7 +35,6 @@ class LoginPage extends StatelessWidget {
     }
 
     final user = auth.currentUser;
-    final userName = user?.displayName ?? "Adventurer";
 
     final prefs = await SharedPreferences.getInstance();
     final userId = user?.uid ?? "guest";
@@ -52,7 +50,7 @@ class LoginPage extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => isFirstLogin
-            ? InfoPage(text: userName)
+            ? InfoPage()
             : const MainMenuScreen(),
       ),
     );

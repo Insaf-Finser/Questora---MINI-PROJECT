@@ -5,6 +5,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:quest/core/config/assets/app_images.dart';
+import 'package:quest/presentation/load.dart';
+import 'package:quest/presentation/start/start.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -14,15 +17,23 @@ class GamePage extends StatefulWidget {
   final String characterName;
   final String characterDescription;
   final String genre;
-  final int age;
+  final String gender;  // New parameter
+  final int playTime;
+  final int age;  // New parameter
+  
+  
 
-  const GamePage({
+  const GamePage({  
     super.key,
     required this.characterName,
     required this.characterDescription,
     required this.genre,
+    required this.gender,
+    required this.playTime,
     required this.age,
   });
+  
+
 
   @override
   GamePageState createState() => GamePageState();
@@ -153,19 +164,26 @@ class GamePageState extends State<GamePage> {
       introduction = "Ensure the narrative builds on previous events, making choices impact future events logically.";
     }
 
-    String prompt = "You are an AI storyteller crafting a deep and immersive narrative with complex branching paths that last atmost an hour but can end early by risky choices.\n" 
+    String prompt = "You are an AI storyteller crafting a deep and immersive narrative with complex branching paths that last atmost an hour but can end early by risky choices that must conclude within ${widget.playTime} minutes of gameplay.\n" 
                     "Character Name: ${widget.characterName}\n" 
                     "Character Description: ${widget.characterDescription}\n" 
+                    "Character Gender : ${widget.gender}\n"
                     "Genre: ${widget.genre}\n" 
                     "Story so far: ${_storyHistory.toList().join(' ')}\n"
                     "Most Recent Choice: $userChoice\n" 
                     "Ensure the narrative builds on previous events, making choices impact future events logically.\n" 
                     "$introduction\n"
                     "$contentRating\n"
+                    "The story should have natural pacing that fits this duration, with approximately ${(widget.playTime/5).round()} major story beats."
                     "Introduce objectives, unexpected plot twists, and character interactions based on past decisions.\n" 
                     "Provide a rich, immersive story continuation in well-formatted single paragraph containing no more than 200 words, followed by at least three and at most five meaningful choices.\n" 
-                    "Choices should be diverse: some safe, some risky, some creative and some dangerous. Format them as a numbered list. Use short phrases instead of  sentences. \n"
-                    "Followed by at least three and at most five meaningful choices.\n";
+                    "Choices should be diverse: some safe, some risky, some creative and some dangerous. Format them as a numbered list. \n"
+                    "Use short phrases instead of  sentences. \n"
+                    "Followed by at least three and at most five meaningful choices.\n"
+                    """Include subtle time cues like:
+  - "As the hour grows late..." (if >75% time used)
+   - "Dawn approaches..." (if nearing conclusion)
+   - "Time is running short..." (final 25%)\n""";
                     
 
     String apiKey = dotenv.env['API_KEY'] ?? '';
@@ -257,29 +275,50 @@ class GamePageState extends State<GamePage> {
   }
 
   Future<void> _generateBackgroundImage(String sceneDescription) async {
-    try {
-      String apiKey2 = dotenv.env['API_KEY2'] ?? '';
-      final imageResponse = await http.post(
-        Uri.parse("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"),
-        headers: {
-          "Authorization": "Bearer $apiKey2",
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({"inputs": sceneDescription}),
-      );
+  try {
+    String apiKey2 = dotenv.env['API_KEY3'] ?? '';
+    if (apiKey2.isEmpty) {
+      debugPrint("Hugging Face API key not found");
+      return;
+    }
 
-      if (imageResponse.statusCode == 200) {
+    // Shorten the description if needed (some APIs have length limits)
+    String prompt = "Digital comic-style illustration of: ${sceneDescription.length > 200 
+        ? sceneDescription.substring(0, 200) 
+        : sceneDescription}";
+
+    final imageResponse = await http.post(
+      Uri.parse("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"),
+      headers: {
+        "Authorization": "Bearer $apiKey2",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "inputs": prompt,
+        "options": {"wait_for_model": true}
+      }),
+    );
+
+    if (imageResponse.statusCode == 200) {
+      // Verify it's actually an image
+      if (imageResponse.bodyBytes.isNotEmpty && 
+          imageResponse.headers['content-type']?.startsWith('image/') == true) {
         setState(() {
           _backgroundImage = imageResponse.bodyBytes;
         });
       } else {
-        debugPrint("Failed to load image: ${imageResponse.statusCode}");
-        debugPrint("Response body: ${imageResponse.body}");
+        debugPrint("Response is not an image");
       }
-    } catch (e) {
-      debugPrint("Error generating image: $e");
+    } else {
+      debugPrint("Failed to load image: ${imageResponse.statusCode}");
+      debugPrint("Response body: ${imageResponse.body}");
     }
+  } catch (e) {
+    debugPrint("Error generating image: $e");
   }
+}
+
+  
 
 
   @override
@@ -305,12 +344,7 @@ class GamePageState extends State<GamePage> {
             actionsAppBar: [
 
               Spacer(),
-              IconButton(
-                icon: Icon(Icons.follow_the_signs_rounded),
-                onPressed: () {
-                  
-                },
-              ),
+              
               SizedBox(width: 20),
             ],
             
@@ -328,7 +362,7 @@ class GamePageState extends State<GamePage> {
                     children: [
                       _backgroundImage != null
                 ? Image.memory(_backgroundImage!, fit: BoxFit.fill, width: double.infinity, height: double.infinity )
-                : Container(color: Colors.black),
+                : Container(color: const Color.fromARGB(255, 255, 255, 255)),
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.all(40.0),
@@ -468,7 +502,7 @@ class GamePageState extends State<GamePage> {
                   body: Container(
     decoration: BoxDecoration(
       image: DecorationImage(
-        image: AssetImage("assets/images/history.jpg"), 
+        image: AssetImage(AppImages.history), 
         fit: BoxFit.cover, 
       ),
     ),
@@ -547,6 +581,100 @@ class GamePageState extends State<GamePage> {
   ),
                 ),
               ),
+                ScreenHiddenDrawer(
+                ItemHiddenMenu(
+                  name: "Save/Load",
+                  baseStyle: TextStyle(color: Colors.white),
+                  selectedStyle: TextStyle(color: Colors.yellow),
+                ),
+                Scaffold(
+                  body: LoadGameScreen(
+                  isFromGamePage: true,
+                  currentGameData: {
+                    'characterName': widget.characterName,
+                    'characterDescription': widget.characterDescription,
+                    'genre': widget.genre,
+                    'gender': widget.gender,
+                    'storyHistory': _storyHistory.toList(),
+                    'storyProgress': _storyProgress,
+                  },
+                  ),
+                ),
+                ),
+                ScreenHiddenDrawer(
+  ItemHiddenMenu(
+    name: "Quit",
+    baseStyle: TextStyle(color: Colors.white),
+    selectedStyle: TextStyle(color: Colors.yellow),
+    onTap: () {
+      // Show the dialog box when "Quit" is selected
+      Future.delayed(Duration.zero, () {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Quit Game"),
+              content: Text("Do you want to save before quitting?"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    // Navigate to LoadGameScreen
+                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoadGameScreen(isFromGamePage: true,),
+                      ),
+                    );
+                  },
+                  child: Text("Yes"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Quit without saving
+                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainMenuScreen(),
+                      ),
+                    );
+                  },
+                  child: Text("No"),
+                ),
+              ],
+            );
+          },
+        );
+      });
+    },
+  ),
+  Scaffold(
+    body: Stack(
+      children: [
+        _backgroundImage != null
+            ? Image.memory(
+                _backgroundImage!,
+                fit: BoxFit.fill,
+                width: double.infinity,
+                height: double.infinity,
+              )
+            : Container(color: Colors.black),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(50.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Additional content can go here if needed
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+),
             ],
           ),]
       ),
@@ -622,7 +750,7 @@ class _ChoiceScrollerState extends State<ChoiceScroller> {
                       child: Center(
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width * 0.6,
-                        height: 80, // Allow the button height to adjust dynamically
+                        // Allow the button height to adjust dynamically
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color.fromARGB(155, 255, 255, 255),

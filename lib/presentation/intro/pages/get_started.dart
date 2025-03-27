@@ -1,12 +1,10 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quest/core/config/theme/app_colors.dart';
 import 'package:quest/presentation/login/pages/loginpage.dart';
 import 'package:quest/presentation/start/start.dart';
-
 import '../../../core/config/assets/app_images.dart';
 import '../../../core/config/assets/app_vectors.dart';
 
@@ -17,54 +15,105 @@ class GetStartedPage extends StatefulWidget {
   GetStartedPageState createState() => GetStartedPageState();
 }
 
-
 class GetStartedPageState extends State<GetStartedPage> {
   bool _isTaped = false;
-  double _scale = 1.0; 
+  double _scale = 1.0;
   FirebaseAuth auth = FirebaseAuth.instance;
+  bool _showLoadingScreen = false;
 
-  void _onTap() {
+  Future<void> _onTap() async {
+    if (_isTaped) return;
+
     setState(() {
       _isTaped = true;
-      _scale = 0.7; // Shrink the button before expanding
+      _scale = 0.7;
     });
 
-    
+    // Check auth status when button is pressed
+    final prefs = await SharedPreferences.getInstance();
+    final storedUsername = prefs.getString('username');
+    final user = auth.currentUser;
 
-    if (auth.currentUser != null) {
-      Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const MainMenuScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation, // Fade effect
-          child: child,
-        );
-        },
-      ),
-      );
-    } else {
-      Future.delayed(const Duration(milliseconds: 400), () {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-          opacity: animation, // Fade effect
-          child: child,
-          );
-        },
-        ),
-      );
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      setState(() {
+        _scale = 1.0;
+        _showLoadingScreen = true;
       });
+
+      // Show loading for 5 seconds if logged in
+      if (user != null || storedUsername != null) {
+        await Future.delayed(const Duration(seconds: 5));
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => const MainMenuScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+            ),
+          );
+        }
+      } else {
+        // No delay for new users
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    Future.delayed(const Duration (milliseconds: 800), () {});
+    if (_showLoadingScreen) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(AppImages.introBG),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                
+                const SizedBox(height: 40),
+                const CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 6,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Loading your adventure...',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 18,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold( 
       body: Stack( 
         alignment: Alignment.center,
@@ -86,7 +135,6 @@ class GetStartedPageState extends State<GetStartedPage> {
               SvgPicture.asset(AppVectors.logolight, height: 90),
               const Spacer(),
 
-              // Shrinking and morphing button into a large box
               TweenAnimationBuilder(
                 duration: const Duration(milliseconds: 500),
                 tween: Tween<double>(begin: 1.0, end: _scale),
@@ -97,12 +145,12 @@ class GetStartedPageState extends State<GetStartedPage> {
                       onTap: _onTap,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 500),
-                        height:65,
-                        width:65,
+                        height: 65,
+                        width: 65,
                         decoration: BoxDecoration(
                           color: Colors.transparent,
-                          border: _isTaped ? Border.all(color: const Color.fromARGB(0, 173, 154, 92), width: 1) :Border.all(color: AppColors.primary, width: 3),
-                          borderRadius: BorderRadius.circular(32), // Optional: rounded corners
+                          border: _isTaped ? Border.all(color: const Color.fromARGB(0, 173, 154, 92), width: 1) : Border.all(color: AppColors.primary, width: 3),
+                          borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.2),
@@ -112,26 +160,31 @@ class GetStartedPageState extends State<GetStartedPage> {
                           ],
                         ),
                         alignment: Alignment.center,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 500),
-                          height: 52,
-                          width: 52,
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            border: _isTaped ? Border.all(color: const Color.fromARGB(0, 173, 154, 92), width: 1) :Border.all(color: AppColors.primary, width: 5),
-                            borderRadius: BorderRadius.circular(32), // Optional: rounded corners
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                offset: const Offset(0, -4),
-                                blurRadius: 20,
+                        child: _isTaped
+                            ? CircularProgressIndicator(
+                                color: AppColors.primary,
+                                strokeWidth: 3,
+                              )
+                            : AnimatedContainer(
+                                duration: const Duration(milliseconds: 500),
+                                height: 52,
+                                width: 52,
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: _isTaped ? Border.all(color: const Color.fromARGB(0, 173, 154, 92), width: 1) : Border.all(color: AppColors.primary, width: 5),
+                                  borderRadius: BorderRadius.circular(32),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      offset: const Offset(0, -4),
+                                      blurRadius: 20,
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
+                                child: null,
                               ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child:  null, 
-                        ),
                       ),
                     ),
                   );

@@ -45,6 +45,7 @@ dependencies:
   popover: ^0.3.1
   hidden_drawer_menu: ^3.0.1
   sliding_up_panel: ^2.0.0
+  intl: ^0.20.2
   
 
 dev_dependencies:
