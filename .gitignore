@@ -46,3 +46,5 @@ app.*.map.json
 # Environment variable files
 .env
 .env.*
+assets/StoryGenerator.env
+assets/ImageGenerator.env
