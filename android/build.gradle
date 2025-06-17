@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.3.0'  // AGP version
+        // Add other plugins here (e.g., Firebase, Kotlin)
+    }
+}
+
 allprojects {
     repositories {
         google()

@@ -190,7 +190,7 @@ Future<void> _saveGame() async {
                 else if (widget.isFromGamePage)
                   _buildSaveButton()
                 else
-                  ...savedGames.map((game) => _buildGameTile(game)).toList(),
+                  ...savedGames.map((game) => _buildGameTile(game)),
               ],
             ),
           ),

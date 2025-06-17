@@ -135,7 +135,7 @@ class CharacterCreationPageState extends State<CharacterCreationPage> {
                 ),
                 SizedBox(height: 70),
                 Container(
-                  height: 600,
+                  height: 500,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),

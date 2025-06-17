@@ -22,38 +22,29 @@ class AuthServices {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-    // Add your specific clientId if needed (for web)
-    // clientId: 'your-client-id.apps.googleusercontent.com',
-
   );
 
   Future<AuthResult> signInWithGoogle() async {
-
-
     try {
-
-      await _googleSignIn.signOut();
-
-
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return AuthResult(status: false, error: 'User cancelled sign-in');
       }
 
-      final GoogleSignInAuthentication googleAuth = 
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = 
-          await _auth.signInWithCredential(credential);
-      
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      final bool isFirstLogin = userCredential.additionalUserInfo?.isNewUser ?? false;
+
       return AuthResult(
         status: true,
+        isFirstLogin: isFirstLogin,
         user: userCredential.user,
       );
     } on FirebaseAuthException catch (e) {

@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:quest/core/config/assets/app_images.dart';
@@ -22,23 +21,20 @@ class LoginPage extends StatelessWidget {
           builder: (_) => InfoPage(),
         ),
       );
-      return; // Exit early for guest login
+      return;
     }
 
-    final auth = FirebaseAuth.instance;
-    final bool result = (await AuthServices().signInWithGoogle()) as bool;
-    if (!result) {
+    final authResult = await AuthServices().signInWithGoogle();
+    if (!authResult.status) {
       if (context.mounted) {
-        _showError(context, "Google Sign-In Failed");
+        _showError(context, authResult.error ?? "Google Sign-In Failed");
       }
       return;
     }
 
-    final user = auth.currentUser;
-
     final prefs = await SharedPreferences.getInstance();
-    final userId = user?.uid ?? "guest";
-    final isFirstLogin = !(prefs.getBool('${userId}_hasLoggedInBefore') ?? false);
+    final userId = authResult.user?.uid ?? "guest";
+    final isFirstLogin = !(prefs.getBool('${userId}_hasLoggedInBefore') ?? false) ;
 
     if (isFirstLogin) {
       await prefs.setBool('${userId}_hasLoggedInBefore', true);
@@ -60,7 +56,6 @@ class LoginPage extends StatelessWidget {
     }
   }
 }
-
 
   void _showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -228,11 +223,16 @@ class LoginPage extends StatelessWidget {
               width: 35,
             ),
             const SizedBox(width: 16),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Color.fromARGB(255, 122, 122, 121),
-                fontSize: 15,
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Color.fromARGB(255, 122, 122, 121),
+                  fontSize: 15,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                softWrap: false,
               ),
             ),
           ],

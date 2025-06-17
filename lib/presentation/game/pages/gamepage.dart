@@ -194,7 +194,7 @@ class GamePageState extends State<GamePage> {
         "Content-Type": "application/json",
       },
       body: jsonEncode({
-        "model": "google/gemini-2.0-flash-exp:free",
+        "model": "mistralai/devstral-small:free",
         "prompt": prompt,
         "max_tokens": 600,
         "temperature": 0.85,
@@ -429,7 +429,7 @@ class GamePageState extends State<GamePage> {
                                       showDialog(
                                       context: context,
                                       builder: (BuildContext context) {
-                                        TextEditingController _textController = TextEditingController();
+                                        TextEditingController textController = TextEditingController();
                                         return StatefulBuilder(
                                         builder: (context, setState) {
                                           return AlertDialog(
@@ -438,17 +438,17 @@ class GamePageState extends State<GamePage> {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                             TextField(
-                                              controller: _textController,
+                                              controller: textController,
                                               maxLength: 50,
                                               decoration: InputDecoration(
                                               hintText: "Type your own choice here",
-                                              counterText: "${_textController.text.length}/50",
+                                              counterText: "${textController.text.length}/50",
                                               ),
                                               onChanged: (value) {
                                               setState(() {});
                                               },
                                             ),
-                                            if (_textController.text.length > 50)
+                                            if (textController.text.length > 50)
                                               Text(
                                               "Limit exceeded!",
                                               style: TextStyle(color: Colors.red, fontSize: 12),
@@ -464,7 +464,7 @@ class GamePageState extends State<GamePage> {
                                             ),
                                             TextButton(
                                             onPressed: () {
-                                              String userInput = _textController.text.trim();
+                                              String userInput = textController.text.trim();
                                               if (userInput.isNotEmpty && userInput.length <= 50) {
                                               _onChoiceSelected(userInput);
                                               }
